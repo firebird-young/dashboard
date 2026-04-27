@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>景区导览 · 数据看板</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #f0f4f8;
+      color: #2d3748;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1a73e8 0%, #0f52ba 100%);
+      padding: 28px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 16px rgba(26,115,232,.3);
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .logo {
+      width: 44px; height: 44px;
+      background: rgba(255,255,255,.18);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .header-left h1 { color: #fff; font-size: 22px; font-weight: 700; }
+    .header-left p  { color: rgba(255,255,255,.7); font-size: 13px; margin-top: 3px; }
+    .header-time {
+      color: rgba(255,255,255,.6);
+      font-size: 13px;
+      text-align: right;
+    }
+    .header-time .date { font-size: 15px; color: rgba(255,255,255,.85); font-weight: 600; }
+
+    /* ── Container ── */
+    .container {
+      max-width: 1100px;
+      margin: 36px auto;
+      padding: 0 24px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 20px;
+      padding-left: 12px;
+      border-left: 3px solid #1a73e8;
+      line-height: 1;
+    }
+
+    /* ── Card Grid ── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
+    }
+
+    .dashboard-card {
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+      transition: transform .2s, box-shadow .2s;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .dashboard-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 28px rgba(26,115,232,.15);
+    }
+    .card-banner {
+      height: 6px;
+      width: 100%;
+    }
+    .card-banner.blue   { background: linear-gradient(90deg, #1a73e8, #6ea8fe); }
+    .card-banner.green  { background: linear-gradient(90deg, #34a853, #81d4a8); }
+    .card-banner.orange { background: linear-gradient(90deg, #fa7c17, #ffc069); }
+    .card-banner.purple { background: linear-gradient(90deg, #9b59b6, #c39bd3); }
+    .card-banner.red    { background: linear-gradient(90deg, #e74c3c, #f1948a); }
+    .card-banner.teal   { background: linear-gradient(90deg, #0ea5e9, #7dd3fc); }
+
+    .card-body {
+      padding: 24px 28px 28px;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+    .card-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .card-icon.blue   { background: #e8f0fe; }
+    .card-icon.green  { background: #e6f7ed; }
+    .card-icon.orange { background: #fff3e0; }
+    .card-icon.purple { background: #f3e8ff; }
+    .card-icon.red    { background: #fde8e8; }
+    .card-icon.teal   { background: #e0f7fa; }
+
+    .card-title { font-size: 17px; font-weight: 700; color: #1a202c; }
+    .card-sub   { font-size: 12px; color: #999; margin-top: 2px; }
+    .card-desc  {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.7;
+      margin-bottom: 18px;
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a73e8;
+    }
+    .card-footer .arrow {
+      transition: transform .2s;
+      font-size: 16px;
+    }
+    .dashboard-card:hover .card-footer .arrow {
+      transform: translateX(4px);
+    }
+
+    /* ── Stats Bar ── */
+    .stats-bar {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 36px;
+      flex-wrap: wrap;
+    }
+    .stat-chip {
+      background: #fff;
+      border-radius: 10px;
+      padding: 14px 22px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.05);
+      flex: 1;
+      min-width: 150px;
+    }
+    .stat-chip .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot.blue   { background: #1a73e8; }
+    .dot.green  { background: #34a853; }
+    .dot.orange { background: #fa7c17; }
+    .dot.purple { background: #9b59b6; }
+    .stat-chip .label { font-size: 12px; color: #999; }
+    .stat-chip .value { font-size: 18px; font-weight: 700; color: #1a202c; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 30px 0 40px;
+      font-size: 12px;
+      color: #bbb;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo">🏛️</div>
+    <div>
+      <h1>景区导览 · 数据看板</h1>
+      <p>ai-guide.yihaichina.com.cn</p>
+    </div>
+  </div>
+  <div class="header-time">
+    <div class="date" id="currentDate"></div>
+    <div id="currentTime"></div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- 快捷统计 -->
+  <div class="stats-bar">
+    <div class="stat-chip">
+      <span class="dot blue"></span>
+      <div>
+        <div class="label">看板数量</div>
+        <div class="value">6</div>
+      </div>
+    </div>
+    <div class="stat-chip">
+      <span class="dot green"></span>
+      <div>
+        <div class="label">系统状态</div>
+        <div class="value" style="color:#34a853;">● 正常</div>
+      </div>
+    </div>
+    <div class="stat-chip">
+      <span class="dot orange"></span>
+      <div>
+        <div class="label">接口地址</div>
+        <div class="value" style="font-size:13px;font-weight:500;">ai-guide.yihaichina.com.cn</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 看板入口 -->
+  <div class="section-title">数据看板</div>
+  <div class="card-grid">
+
+    <a class="dashboard-card" href="order_stats.html">
+      <div class="card-banner blue"></div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-icon blue">💰</div>
+          <div>
+            <div class="card-title">交易统计</div>
+            <div class="card-sub">订单看板</div>
+          </div>
+        </div>
+        <div class="card-desc">
+          查看指定日期范围内的交易数据，支持按日统计笔数与金额，折线图、柱状图、商品/景区分布饼图及明细表格。
+        </div>
+        <div class="card-footer">
+          进入看板
+          <span class="arrow">→</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="dashboard-card" href="order_stats.html" style="pointer-events:none;opacity:.5;">
+      <div class="card-banner green"></div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-icon green">👥</div>
+          <div>
+            <div class="card-title">用户分析</div>
+            <div class="card-sub">用户看板</div>
+          </div>
+        </div>
+        <div class="card-desc">
+          注册用户趋势、活跃用户分析、用户画像分布，了解景区导览系统的用户增长与留存情况。
+        </div>
+        <div class="card-footer" style="color:#bbb;">
+          敬请期待
+          <span class="arrow">→</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="dashboard-card" href="order_stats.html" style="pointer-events:none;opacity:.5;">
+      <div class="card-banner orange"></div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-icon orange">🏛️</div>
+          <div>
+            <div class="card-title">景区排名</div>
+            <div class="card-sub">景区看板</div>
+          </div>
+        </div>
+        <div class="card-desc">
+          各景区订单量与收入排名、热门景区对比分析，帮助快速了解不同景区的经营表现。
+        </div>
+        <div class="card-footer" style="color:#bbb;">
+          敬请期待
+          <span class="arrow">→</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="dashboard-card" href="order_stats.html" style="pointer-events:none;opacity:.5;">
+      <div class="card-banner purple"></div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-icon purple">🎟️</div>
+          <div>
+            <div class="card-title">商品分析</div>
+            <div class="card-sub">商品看板</div>
+          </div>
+        </div>
+        <div class="card-desc">
+          各版本产品（标准版/学术版/廉洁版）销售对比、价格区间分布、购买频次分析。
+        </div>
+        <div class="card-footer" style="color:#bbb;">
+          敬请期待
+          <span class="arrow">→</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="dashboard-card" href="order_stats.html" style="pointer-events:none;opacity:.5;">
+      <div class="card-banner red"></div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-icon red">📈</div>
+          <div>
+            <div class="card-title">收入报表</div>
+            <div class="card-sub">财务看板</div>
+          </div>
+        </div>
+        <div class="card-desc">
+          月度/季度收入汇总、收入趋势对比、结算明细，为财务对账提供数据支撑。
+        </div>
+        <div class="card-footer" style="color:#bbb;">
+          敬请期待
+          <span class="arrow">→</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="dashboard-card" href="order_stats.html" style="pointer-events:none;opacity:.5;">
+      <div class="card-banner teal"></div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-icon teal">⭐</div>
+          <div>
+            <div class="card-title">综合概览</div>
+            <div class="card-sub">总览看板</div>
+          </div>
+        </div>
+        <div class="card-desc">
+          全局核心指标一览，涵盖交易、用户、景区、商品的多维度综合数据概览。
+        </div>
+        <div class="card-footer" style="color:#bbb;">
+          敬请期待
+          <span class="arrow">→</span>
+        </div>
+      </div>
+    </a>
+
+  </div>
+</div>
+
+<footer>景区导览数据看板 &copy; 2026 · ai-guide.yihaichina.com.cn</footer>
+
+<script>
+// 实时时间
+function updateTime() {
+  const now = new Date();
+  const weekNames = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
+  document.getElementById("currentDate").textContent =
+    now.getFullYear() + "年" + (now.getMonth()+1) + "月" + now.getDate() + "日 " + weekNames[now.getDay()];
+  document.getElementById("currentTime").textContent =
+    String(now.getHours()).padStart(2,"0") + ":" +
+    String(now.getMinutes()).padStart(2,"0") + ":" +
+    String(now.getSeconds()).padStart(2,"0");
+}
+updateTime();
+setInterval(updateTime, 1000);
+</script>
+</body>
+</html>
