@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>景区导览 · 交易统计</title>
+  <title>电量订单 · 交易统计</title>
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -16,12 +16,12 @@
 
     /* ── Header ── */
     header {
-      background: linear-gradient(135deg, #1a73e8 0%, #0f52ba 100%);
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
       padding: 24px 32px;
       display: flex;
       align-items: center;
       gap: 14px;
-      box-shadow: 0 2px 12px rgba(26,115,232,.3);
+      box-shadow: 0 2px 12px rgba(14,165,233,.3);
     }
     header .logo {
       width: 40px; height: 40px;
@@ -32,6 +32,17 @@
     }
     header h1 { color: #fff; font-size: 20px; font-weight: 600; }
     header p  { color: rgba(255,255,255,.75); font-size: 13px; margin-top: 2px; }
+    .back-link {
+      margin-left: auto;
+      color: rgba(255,255,255,.85);
+      text-decoration: none;
+      font-size: 14px;
+      padding: 8px 16px;
+      background: rgba(255,255,255,.15);
+      border-radius: 8px;
+      transition: background .2s;
+    }
+    .back-link:hover { background: rgba(255,255,255,.25); }
 
     /* ── Query bar ── */
     .query-bar {
@@ -55,10 +66,10 @@
       outline: none;
       transition: border .2s;
     }
-    .query-bar input[type="date"]:focus { border-color: #1a73e8; }
+    .query-bar input[type="date"]:focus { border-color: #0ea5e9; }
     .sep { color: #aaa; font-size: 18px; }
     .btn-query {
-      background: linear-gradient(135deg, #1a73e8, #0f52ba);
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
       color: #fff;
       border: none;
       border-radius: 8px;
@@ -74,6 +85,13 @@
       font-size: 13px;
       color: #888;
       margin-left: auto;
+    }
+    .filter-hint {
+      font-size: 12px;
+      color: #0ea5e9;
+      background: #e0f7fa;
+      padding: 6px 12px;
+      border-radius: 6px;
     }
 
     /* ── KPI cards ── */
@@ -98,12 +116,11 @@
       top: 0; left: 0; right: 0;
       height: 3px;
     }
-    .kpi-card.blue::before  { background: #1a73e8; }
+    .kpi-card.blue::before  { background: #0ea5e9; }
     .kpi-card.green::before { background: #34a853; }
     .kpi-card.orange::before{ background: #fa7c17; }
     .kpi-card.purple::before{ background: #9b59b6; }
     .kpi-card.red::before   { background: #e74c3c; }
-    .kpi-card.teal::before  { background: #0ea5e9; }
     .kpi-label { font-size: 13px; color: #888; }
     .kpi-value { font-size: 28px; font-weight: 700; margin: 8px 0 4px; color: #1a202c; }
     .kpi-value.highlight { color: #e74c3c; }
@@ -142,12 +159,12 @@
       font-size: 14px;
     }
     th {
-      background: #f5f8ff;
+      background: #f0f9ff;
       padding: 10px 14px;
       text-align: left;
       font-weight: 600;
       color: #555;
-      border-bottom: 2px solid #e8eef8;
+      border-bottom: 2px solid #e0f7fa;
     }
     td {
       padding: 10px 14px;
@@ -155,7 +172,7 @@
       color: #444;
     }
     tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #f7f9ff; }
+    tr:hover td { background: #f7fbff; }
     .tag {
       display: inline-block;
       padding: 2px 10px;
@@ -164,7 +181,8 @@
       font-weight: 600;
     }
     .tag-high   { background: #fde8e8; color: #c0392b; }
-    .tag-normal { background: #e8f4fd; color: #1a73e8; }
+    .tag-normal { background: #e0f7fa; color: #0ea5e9; }
+    .tag-success{ background: #e6f7ed; color: #34a853; }
 
     /* ── Empty / loading states ── */
     .placeholder {
@@ -173,20 +191,8 @@
       color: #bbb;
       font-size: 15px;
     }
-    .loading-wrap {
-      display: flex; justify-content: center; align-items: center;
-      height: 100px;
-    }
-    .spinner {
-      width: 32px; height: 32px;
-      border: 3px solid #e0e7ff;
-      border-top-color: #1a73e8;
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Goods & exhibit breakdown ── */
+    /* ── Breakdown row ── */
     .breakdown-row {
       display: flex;
       gap: 20px;
@@ -256,7 +262,7 @@
       font-family: "Consolas", "Courier New", monospace;
       letter-spacing: .3px;
     }
-    .modal-input:focus { border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,.1); }
+    .modal-input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,.1); }
     .modal-input::placeholder { color: #c0c0c0; font-family: -apple-system, "PingFang SC", sans-serif; letter-spacing: 0; }
     .modal-hint { font-size: 12px; color: #aaa; margin-top: 6px; }
     .modal-actions {
@@ -273,18 +279,19 @@
       transition: opacity .2s;
     }
     .modal-btn:hover { opacity: .88; }
-    .modal-btn-primary { background: linear-gradient(135deg, #1a73e8, #0f52ba); color: #fff; }
+    .modal-btn-primary { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff; }
     .modal-btn-cancel  { background: #f0f4f8; color: #555; }
   </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">🏛️</div>
+  <div class="logo">⚡</div>
   <div>
-    <h1>景区导览 · 交易统计看板</h1>
-    <p>ai-guide.yihaichina.com.cn · 已支付订单 (state=3)</p>
+    <h1>电量订单 · 交易统计看板</h1>
+    <p>admin-api/business/trade-value/page · 按时间倒序筛选</p>
   </div>
+  <a class="back-link" href="index.html">← 返回首页</a>
 </header>
 
 <!-- 查询条件 -->
@@ -295,6 +302,7 @@
   <label>结束日期</label>
   <input type="date" id="endDate" />
   <button class="btn-query" id="btnQuery" onclick="queryData()">查询</button>
+  <span class="filter-hint">💡 默认今天~明天，可手动修改日期范围查看历史</span>
   <span class="status-tip" id="statusTip">请选择日期后点击查询</span>
 </div>
 
@@ -352,16 +360,22 @@
   </div>
 </div>
 
-<!-- 商品 & 景区分布 -->
+<!-- 商品 & 类型分布 -->
 <div class="breakdown-row">
   <div class="breakdown-card">
     <h2>🎟️ 商品销售分布</h2>
     <div class="breakdown-box" id="chartGoods"></div>
   </div>
   <div class="breakdown-card">
-    <h2>🏛️ 景区订单分布</h2>
-    <div class="breakdown-box" id="chartExhibit"></div>
+    <h2>🏷️ 商品类型分布</h2>
+    <div class="breakdown-box" id="chartType"></div>
   </div>
+</div>
+
+<!-- 明细表格 -->
+<div class="table-card">
+  <h2>📋 按日明细数据</h2>
+  <div id="tableWrap"><div class="placeholder">暂无数据，请先选择日期查询</div></div>
 </div>
 
 <!-- Token 过期弹窗 -->
@@ -380,19 +394,12 @@
   </div>
 </div>
 
-<!-- 明细表格 -->
-<div class="table-card">
-  <h2>📋 按日明细数据</h2>
-  <div id="tableWrap"><div class="placeholder">暂无数据，请先选择日期查询</div></div>
-</div>
-
 <script>
 // ── Token 管理 ──
 let currentToken = "bd3a2cb422294fe18d3cb3a7de7804af";
 const TOKEN_KEY = "ai_guide_token";
 
 (function loadToken() {
-  // 优先从 localStorage 恢复
   const saved = localStorage.getItem(TOKEN_KEY);
   if (saved) currentToken = saved;
 })();
@@ -426,7 +433,6 @@ function confirmToken() {
   queryData();
 }
 
-// 回车确认
 document.addEventListener("keydown", function(e) {
   if (e.key === "Enter" && document.getElementById("tokenModal").classList.contains("show")) {
     confirmToken();
@@ -447,10 +453,31 @@ document.addEventListener("keydown", function(e) {
 })();
 
 // ── ECharts 实例 ──
-let chartLine, chartBar, chartGoods, chartExhibit;
+let chartLine, chartBar, chartGoods, chartType;
 window.addEventListener("resize", () => {
-  [chartLine, chartBar, chartGoods, chartExhibit].forEach(c => c && c.resize());
+  [chartLine, chartBar, chartGoods, chartType].forEach(c => c && c.resize());
 });
+
+// ── 解析订单时间 ──
+function parseOrderTime(order) {
+  // 尝试各种可能的时间字段
+  const keys = ["createTime", "payTime", "tradeTime", "orderTime", "time"];
+  for (const key of keys) {
+    const val = order[key];
+    if (!val) continue;
+    if (typeof val === "number") {
+      // 毫秒时间戳
+      if (val > 1e10) return val;
+      // 秒时间戳
+      if (val > 1e9) return val * 1000;
+    }
+    if (typeof val === "string") {
+      const parsed = new Date(val).getTime();
+      if (!isNaN(parsed)) return parsed;
+    }
+  }
+  return 0;
+}
 
 // ── 主查询函数 ──
 async function queryData() {
@@ -460,14 +487,14 @@ async function queryData() {
   if (startVal > endVal)    { showError("开始日期不能晚于结束日期"); return; }
 
   hideError();
-  setStatus("查询中…");
+  setStatus("正在全量拉取数据…");
   document.getElementById("btnQuery").disabled = true;
 
-  // 时间戳：开始日 00:00:00 ~ 结束日 23:59:59
+  // 时间戳范围（用于前端筛选）
   const startMs = new Date(startVal + "T00:00:00").getTime();
   const endMs   = new Date(endVal   + "T23:59:59").getTime();
 
-  const BASE = "https://ai-guide.yihaichina.com.cn/admin-api/pay/tenant-order/page";
+  const BASE = "https://ai-guide.yihaichina.com.cn/admin-api/business/trade-value/page";
   const HEADERS = {
     "Authorization": "Bearer " + currentToken,
     "Tenant-Id": "1",
@@ -480,7 +507,7 @@ async function queryData() {
 
   try {
     while (true) {
-      const url = `${BASE}?pageNo=${pageNo}&pageSize=${pageSize}&startTime=${startMs}&endTime=${endMs}&state=3`;
+      const url = `${BASE}?pageNo=${pageNo}&pageSize=${pageSize}`;
       const resp = await fetch(url, { headers: HEADERS });
       if (!resp.ok) {
         if (resp.status === 401 || resp.status === 403) {
@@ -492,7 +519,6 @@ async function queryData() {
       const json = await resp.json();
       if (json.code !== 200 && json.code !== 0) {
         const msg = json.msg || "接口错误";
-        // 识别常见的 token 过期 / 未登录错误码
         const authFail = /token|登录|认证|授权|未登录|过期|expired|unauthorized|invalid/i.test(msg);
         if (authFail) {
           openTokenModal();
@@ -506,6 +532,8 @@ async function queryData() {
       allOrders = allOrders.concat(list);
       setStatus(`已获取 ${allOrders.length} / ${total} 条…`);
 
+      // 按时间倒序查询：如果当前页最老记录的时间已经早于筛选范围，可以提前终止
+      // 但为了准确，还是拉取全部
       if (allOrders.length >= total || list.length < pageSize) break;
       pageNo++;
     }
@@ -516,15 +544,22 @@ async function queryData() {
   }
 
   document.getElementById("btnQuery").disabled = false;
-  renderAll(allOrders, startVal, endVal);
+
+  // 前端按时间筛选
+  const filteredOrders = allOrders.filter(o => {
+    const ts = parseOrderTime(o);
+    return ts >= startMs && ts <= endMs;
+  });
+
+  setStatus(`全量 ${allOrders.length} 条，筛选后 ${filteredOrders.length} 条`);
+  renderAll(filteredOrders, startVal, endVal, allOrders.length);
 }
 
 // ── 渲染全部 ──
-function renderAll(orders, startVal, endVal) {
-  // 按日聚合
+function renderAll(orders, startVal, endVal, totalFetched) {
   const dayMap = {};
   const goodsMap = {};
-  const exhibitMap = {};
+  const typeMap = {};
 
   // 生成日期范围骨架
   const start = new Date(startVal);
@@ -537,11 +572,10 @@ function renderAll(orders, startVal, endVal) {
   let totalCount = 0, totalAmount = 0;
 
   orders.forEach(o => {
-    const ts = o.createTime || 0;
-    const day = ts > 1e10
-      ? new Date(ts).toISOString().split("T")[0]
-      : String(ts).slice(0, 10);
-    const price = parseFloat(o.totalPrice ?? o.price ?? 0);
+    const ts = parseOrderTime(o);
+    const day = ts > 0 ? new Date(ts).toISOString().split("T")[0] : "未知";
+    // 金额字段：尝试 tradeValue / amount / price / totalPrice
+    const price = parseFloat(o.tradeValue ?? o.amount ?? o.price ?? o.totalPrice ?? 0);
 
     if (dayMap[day]) {
       dayMap[day].count++;
@@ -550,17 +584,17 @@ function renderAll(orders, startVal, endVal) {
     totalCount++;
     totalAmount += price;
 
-    // 商品
-    const g = o.name || "未知";
+    // 商品名称
+    const g = o.properName || o.goodsName || o.name || "未知";
     if (!goodsMap[g]) goodsMap[g] = { count: 0, amount: 0 };
     goodsMap[g].count++;
     goodsMap[g].amount += price;
 
-    // 景区
-    const ex = o.exhibitName || "未知";
-    if (!exhibitMap[ex]) exhibitMap[ex] = { count: 0, amount: 0 };
-    exhibitMap[ex].count++;
-    exhibitMap[ex].amount += price;
+    // 商品类型
+    const t = o.properType || o.goodsType || o.type || "未知";
+    if (!typeMap[t]) typeMap[t] = { count: 0, amount: 0 };
+    typeMap[t].count++;
+    typeMap[t].amount += price;
   });
 
   const days   = Object.keys(dayMap).sort().reverse();
@@ -579,8 +613,6 @@ function renderAll(orders, startVal, endVal) {
   document.getElementById("kpiDays").textContent   = daySpan;
   document.getElementById("kpiAvg").textContent    = (totalCount / daySpan).toFixed(1);
 
-  setStatus(`共 ${totalCount} 笔订单，总金额 ¥${totalAmount.toFixed(2)} 元`);
-
   // 折线图
   if (!chartLine) chartLine = echarts.init(document.getElementById("chartLine"));
   chartLine.setOption({
@@ -591,11 +623,11 @@ function renderAll(orders, startVal, endVal) {
     series: [{
       name: "交易笔数", type: "line", data: counts,
       smooth: true, symbol: "circle", symbolSize: 7,
-      lineStyle: { color: "#1a73e8", width: 2.5 },
-      itemStyle: { color: "#1a73e8" },
+      lineStyle: { color: "#0ea5e9", width: 2.5 },
+      itemStyle: { color: "#0ea5e9" },
       areaStyle: { color: { type: "linear", x:0,y:0,x2:0,y2:1,
-        colorStops: [{ offset: 0, color: "rgba(26,115,232,.25)" },
-                     { offset: 1, color: "rgba(26,115,232,.02)" }] } }
+        colorStops: [{ offset: 0, color: "rgba(14,165,233,.25)" },
+                     { offset: 1, color: "rgba(14,165,233,.02)" }] } }
     }]
   });
 
@@ -635,20 +667,20 @@ function renderAll(orders, startVal, endVal) {
     }]
   });
 
-  // 景区饼图
-  const exhibitPie = Object.entries(exhibitMap)
+  // 类型饼图
+  const typePie = Object.entries(typeMap)
     .map(([name, v]) => ({ name, value: v.count }))
     .sort((a, b) => b.value - a.value);
-  if (!chartExhibit) chartExhibit = echarts.init(document.getElementById("chartExhibit"));
-  chartExhibit.setOption({
+  if (!chartType) chartType = echarts.init(document.getElementById("chartType"));
+  chartType.setOption({
     tooltip: { trigger: "item", formatter: "{b}: {c} 笔 ({d}%)" },
     legend: { orient: "vertical", right: 10, top: "center", textStyle: { fontSize: 12 } },
     series: [{
       type: "pie", radius: ["40%", "70%"],
       center: ["38%", "50%"],
-      data: exhibitPie,
+      data: typePie,
       label: { show: false },
-      color: ["#fa7c17","#1a73e8","#34a853","#9b59b6","#e74c3c"],
+      color: ["#fa7c17","#0ea5e9","#34a853","#9b59b6","#e74c3c"],
       emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: "rgba(0,0,0,.15)" } }
     }]
   });
@@ -676,7 +708,10 @@ function renderAll(orders, startVal, endVal) {
         </tr>
       </thead>
       <tbody>${rows}</tbody>
-    </table>`;
+    </table>
+    <div style="margin-top:12px;font-size:12px;color:#888;">
+      数据来源：全量拉取 ${totalFetched} 条，筛选后 ${orders.length} 条
+    </div>`;
 }
 
 function setStatus(msg) { document.getElementById("statusTip").textContent = msg; }

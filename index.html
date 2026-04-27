@@ -198,11 +198,11 @@
 
   <!-- 快捷统计 -->
   <div class="stats-bar">
-    <div class="stat-chip">
-      <span class="dot blue"></span>
+    <div class="stat-chip .">
+      <span class="dot orange"></span>
       <div>
         <div class="label">看板数量</div>
-        <div class="value">6</div>
+        <div class="value">2</div>
       </div>
     </div>
     <div class="stat-chip">
@@ -231,12 +231,12 @@
         <div class="card-header">
           <div class="card-icon blue">💰</div>
           <div>
-            <div class="card-title">交易统计</div>
+            <div class="card-title">导览订单统计</div>
             <div class="card-sub">订单看板</div>
           </div>
         </div>
         <div class="card-desc">
-          查看指定日期范围内的交易数据，支持按日统计笔数与金额，折线图、柱状图、商品/景区分布饼图及明细表格。
+          查看景区导览订单的指定日期范围交易数据，支持按日统计笔数与金额，折线图、柱状图、商品/景区分布饼图及明细表格。
         </div>
         <div class="card-footer">
           进入看板
@@ -245,11 +245,31 @@
       </div>
     </a>
 
-    <a class="dashboard-card" href="order_stats.html" style="pointer-events:none;opacity:.5;">
+    <a class="dashboard-card" href="power_order_stats.html">
       <div class="card-banner green"></div>
       <div class="card-body">
         <div class="card-header">
-          <div class="card-icon green">👥</div>
+          <div class="card-icon green">⚡</div>
+          <div>
+            <div class="card-title">电量订单统计</div>
+            <div class="card-sub">电量看板</div>
+          </div>
+        </div>
+        <div class="card-desc">
+          查看电量交易订单数据，全量拉取后按时间筛选，支持按日统计、商品销售分布与商品类型分布分析。
+        </div>
+        <div class="card-footer">
+          进入看板
+          <span class="arrow">→</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="dashboard-card" style="pointer-events:none;opacity:.5;">
+      <div class="card-banner purple"></div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-icon purple">👥</div>
           <div>
             <div class="card-title">用户分析</div>
             <div class="card-sub">用户看板</div>
