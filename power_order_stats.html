@@ -302,7 +302,7 @@
   <label>结束日期</label>
   <input type="date" id="endDate" />
   <button class="btn-query" id="btnQuery" onclick="queryData()">查询</button>
-  <span class="filter-hint">💡 默认今天~明天，可手动修改日期范围查看历史</span>
+  <span class="filter-hint">💡 默认最近7天，可手动修改日期范围查看历史</span>
   <span class="status-tip" id="statusTip">请选择日期后点击查询</span>
 </div>
 
@@ -442,14 +442,16 @@ document.addEventListener("keydown", function(e) {
   }
 });
 
-// ── 初始化默认日期：今天 ~ 明天 ──
+// ── 初始化默认日期：最近7天（today-6 ~ today+1） ──
 (function initDates() {
   const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
+  const weekAgo = new Date(today);
+  weekAgo.setDate(today.getDate() - 6);
+  const dayAfter = new Date(today);
+  dayAfter.setDate(today.getDate() + 1);
   const fmt = d => d.toISOString().split("T")[0];
-  document.getElementById("startDate").value = fmt(today);
-  document.getElementById("endDate").value   = fmt(tomorrow);
+  document.getElementById("startDate").value = fmt(weekAgo);
+  document.getElementById("endDate").value   = fmt(dayAfter);
 })();
 
 // ── ECharts 实例 ──
@@ -490,9 +492,9 @@ async function queryData() {
   setStatus("正在全量拉取数据…");
   document.getElementById("btnQuery").disabled = true;
 
-  // 时间戳范围（用于前端筛选）
+  // 时间戳范围（用于前端筛选）：结束日次日 00:00:00，包含结束日当天全天
   const startMs = new Date(startVal + "T00:00:00").getTime();
-  const endMs   = new Date(endVal   + "T23:59:59").getTime();
+  const endMs   = new Date(endVal   + "T00:00:00").getTime();
 
   const BASE = "https://ai-guide.yihaichina.com.cn/admin-api/business/trade-value/page";
   const HEADERS = {
@@ -597,12 +599,13 @@ function renderAll(orders, startVal, endVal, totalFetched) {
     typeMap[t].amount += price;
   });
 
-  const days   = Object.keys(dayMap).sort().reverse();
-  const counts  = days.map(d => dayMap[d].count);
-  const amounts = days.map(d => +dayMap[d].amount.toFixed(2));
+  const allDays = Object.keys(dayMap).sort().reverse().filter(d => d <= new Date().toISOString().split("T")[0]);
+  const chartDays = [...allDays].reverse();
+  const counts  = chartDays.map(d => dayMap[d].count);
+  const amounts = chartDays.map(d => +dayMap[d].amount.toFixed(2));
 
   // KPI
-  const daySpan = days.length || 1;
+  const daySpan = allDays.length || 1;
   const todayStr = new Date().toISOString().split("T")[0];
   const todayData = dayMap[todayStr] || { count: 0, amount: 0 };
   document.getElementById("kpiTodayCount").textContent  = todayData.count;
@@ -618,7 +621,7 @@ function renderAll(orders, startVal, endVal, totalFetched) {
   chartLine.setOption({
     tooltip: { trigger: "axis" },
     grid: { left: 50, right: 20, top: 20, bottom: 50 },
-    xAxis: { type: "category", data: days, axisLabel: { rotate: 30, fontSize: 12 } },
+    xAxis: { type: "category", data: chartDays, axisLabel: { rotate: 30, fontSize: 12 } },
     yAxis: { type: "value", name: "笔数", minInterval: 1 },
     series: [{
       name: "交易笔数", type: "line", data: counts,
@@ -636,7 +639,7 @@ function renderAll(orders, startVal, endVal, totalFetched) {
   chartBar.setOption({
     tooltip: { trigger: "axis", formatter: p => `${p[0].name}<br/>¥${p[0].value}` },
     grid: { left: 60, right: 20, top: 20, bottom: 50 },
-    xAxis: { type: "category", data: days, axisLabel: { rotate: 30, fontSize: 12 } },
+    xAxis: { type: "category", data: chartDays, axisLabel: { rotate: 30, fontSize: 12 } },
     yAxis: { type: "value", name: "金额(元)" },
     series: [{
       name: "交易金额", type: "bar", data: amounts,
@@ -686,8 +689,8 @@ function renderAll(orders, startVal, endVal, totalFetched) {
   });
 
   // 明细表格
-  const maxDay = days.reduce((a, b) => dayMap[a].count >= dayMap[b].count ? a : b, days[0]);
-  const rows = days.map(d => {
+  const maxDay = allDays.reduce((a, b) => dayMap[a].count >= dayMap[b].count ? a : b, allDays[0]);
+  const rows = allDays.map(d => {
     const isMax = d === maxDay && dayMap[d].count > 0;
     return `<tr>
       <td>${d}</td>
