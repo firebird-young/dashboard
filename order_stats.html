@@ -454,6 +454,15 @@ window.addEventListener("resize", () => {
   [chartLine, chartBar, chartGoods, chartExhibit].forEach(c => c && c.resize());
 });
 
+// 用北京时间（本地时间）提取日期，避免 toISOString() 的 UTC 时区偏差
+function getLocalDate(ts) {
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 // ── 主查询函数 ──
 async function queryData() {
   const startVal = document.getElementById("startDate").value;
@@ -532,7 +541,7 @@ function renderAll(orders, startVal, endVal) {
   const start = new Date(startVal);
   const end   = new Date(endVal);
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const key = d.toISOString().split("T")[0];
+    const key = getLocalDate(d.getTime());
     dayMap[key] = { count: 0, amount: 0 };
   }
 
@@ -541,7 +550,7 @@ function renderAll(orders, startVal, endVal) {
   orders.forEach(o => {
     const ts = o.createTime || 0;
     const day = ts > 1e10
-      ? new Date(ts).toISOString().split("T")[0]
+      ? getLocalDate(ts)
       : String(ts).slice(0, 10);
     const price = parseFloat(o.totalPrice ?? o.price ?? 0);
 
@@ -565,14 +574,14 @@ function renderAll(orders, startVal, endVal) {
     exhibitMap[ex].amount += price;
   });
 
-  const allDays = Object.keys(dayMap).sort().reverse().filter(d => d <= new Date().toISOString().split("T")[0]);
+  const allDays = Object.keys(dayMap).sort().reverse().filter(d => d <= getLocalDate(Date.now()));
   const chartDays = [...allDays].reverse();
   const counts  = chartDays.map(d => dayMap[d].count);
   const amounts = chartDays.map(d => +dayMap[d].amount.toFixed(2));
 
   // KPI
   const daySpan = allDays.length || 1;
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getLocalDate(Date.now());
   const todayData = dayMap[todayStr] || { count: 0, amount: 0 };
   document.getElementById("kpiTodayCount").textContent  = todayData.count;
   document.getElementById("kpiTodayAmount").textContent = "¥" + todayData.amount.toFixed(2);

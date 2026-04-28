@@ -289,7 +289,7 @@
   <div class="logo">⚡</div>
   <div>
     <h1>电量订单 · 交易统计看板</h1>
-    <p>admin-api/business/trade-value/page · 按时间倒序筛选</p>
+    <p>admin-api/business/trade-value/page · 已支付订单 (state=3)</p>
   </div>
   <a class="back-link" href="index.html">← 返回首页</a>
 </header>
@@ -481,6 +481,15 @@ function parseOrderTime(order) {
   return 0;
 }
 
+// 用北京时间（本地时间）提取日期，避免 toISOString() 的 UTC 时区偏差
+function getLocalDate(ts) {
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 // ── 主查询函数 ──
 async function queryData() {
   const startVal = document.getElementById("startDate").value;
@@ -547,8 +556,9 @@ async function queryData() {
 
   document.getElementById("btnQuery").disabled = false;
 
-  // 前端按时间筛选
+  // 前端按时间和支付状态筛选（只统计已支付 status=3）
   const filteredOrders = allOrders.filter(o => {
+    if (o.status !== 3) return false;
     const ts = parseOrderTime(o);
     return ts >= startMs && ts <= endMs;
   });
@@ -567,7 +577,7 @@ function renderAll(orders, startVal, endVal, totalFetched) {
   const start = new Date(startVal);
   const end   = new Date(endVal);
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const key = d.toISOString().split("T")[0];
+    const key = getLocalDate(d.getTime());
     dayMap[key] = { count: 0, amount: 0 };
   }
 
@@ -575,7 +585,7 @@ function renderAll(orders, startVal, endVal, totalFetched) {
 
   orders.forEach(o => {
     const ts = parseOrderTime(o);
-    const day = ts > 0 ? new Date(ts).toISOString().split("T")[0] : "未知";
+    const day = ts > 0 ? getLocalDate(ts) : "未知";
     // 金额字段：尝试 tradeValue / amount / price / totalPrice
     const price = parseFloat(o.tradeValue ?? o.amount ?? o.price ?? o.totalPrice ?? 0);
 
@@ -599,14 +609,14 @@ function renderAll(orders, startVal, endVal, totalFetched) {
     typeMap[t].amount += price;
   });
 
-  const allDays = Object.keys(dayMap).sort().reverse().filter(d => d <= new Date().toISOString().split("T")[0]);
+  const allDays = Object.keys(dayMap).sort().reverse().filter(d => d <= getLocalDate(Date.now()));
   const chartDays = [...allDays].reverse();
   const counts  = chartDays.map(d => dayMap[d].count);
   const amounts = chartDays.map(d => +dayMap[d].amount.toFixed(2));
 
   // KPI
   const daySpan = allDays.length || 1;
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getLocalDate(Date.now());
   const todayData = dayMap[todayStr] || { count: 0, amount: 0 };
   document.getElementById("kpiTodayCount").textContent  = todayData.count;
   document.getElementById("kpiTodayAmount").textContent = "¥" + todayData.amount.toFixed(2);
