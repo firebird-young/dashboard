@@ -192,6 +192,79 @@
       font-size: 15px;
     }
 
+    /* ── Month query bar ── */
+    .month-section {
+      background: #fff;
+      margin: 32px 32px 0;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.07);
+      overflow: hidden;
+    }
+    .month-section-header {
+      background: linear-gradient(90deg, #0ea5e9 0%, #0284c7 100%);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .month-section-header h2 { color: #fff; font-size: 15px; font-weight: 600; margin: 0; }
+    .month-section-header .hint { color: rgba(255,255,255,.7); font-size: 12px; margin-left: auto; }
+    .month-query-bar {
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      border-bottom: 1px solid #f0f4f8;
+    }
+    .month-query-bar label { font-size: 14px; color: #555; white-space: nowrap; }
+    .month-query-bar input[type="month"] {
+      border: 1.5px solid #dde3ec;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 14px;
+      color: #333;
+      outline: none;
+      transition: border .2s;
+    }
+    .month-query-bar input[type="month"]:focus { border-color: #0ea5e9; }
+    .btn-month-query {
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 24px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+    }
+    .btn-month-query:hover  { opacity: .9; }
+    .btn-month-query:active { transform: scale(.97); }
+    .btn-month-query:disabled { opacity: .6; cursor: not-allowed; }
+    .month-status { font-size: 13px; color: #888; margin-left: auto; }
+    .month-chart-box { width: 100%; height: 300px; padding: 20px 24px 0; }
+    .month-table-wrap { padding: 16px 24px 24px; }
+    .month-table-wrap table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .month-table-wrap th {
+      background: #e0f7fa;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      color: #555;
+      border-bottom: 2px solid #b2ebf2;
+    }
+    .month-table-wrap td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #f0f4f8;
+      color: #444;
+    }
+    .month-table-wrap tr:last-child td { border-bottom: none; }
+    .month-table-wrap tr:hover td { background: #f0f9ff; }
+
     /* ── Breakdown row ── */
     .breakdown-row {
       display: flex;
@@ -378,6 +451,30 @@
   <div id="tableWrap"><div class="placeholder">暂无数据，请先选择日期查询</div></div>
 </div>
 
+<!-- 按月统计 -->
+<div class="month-section">
+  <div class="month-section-header">
+    <span style="font-size:18px;">📅</span>
+    <h2>按月统计</h2>
+    <span class="hint">💡 统计逻辑：3月 = 3.1 00:00 ~ 4.1 00:00，数据来源同上方全量缓存</span>
+  </div>
+  <div class="month-query-bar">
+    <label>起始月</label>
+    <input type="month" id="monthStart" />
+    <span class="sep" style="color:#aaa;font-size:18px;">→</span>
+    <label>结束月</label>
+    <input type="month" id="monthEnd" />
+    <button class="btn-month-query" id="btnMonthQuery" onclick="queryMonthly()">统计</button>
+    <span class="month-status" id="monthStatus">先执行上方日期查询，再点击此处按月统计</span>
+  </div>
+  <div id="monthChartWrap" class="month-chart-box" style="display:none;">
+    <div id="chartMonth" style="width:100%;height:280px;"></div>
+  </div>
+  <div class="month-table-wrap">
+    <div id="monthTableWrap"><div class="placeholder" style="padding:30px 0;">请先点击「统计」按钮</div></div>
+  </div>
+</div>
+
 <!-- Token 过期弹窗 -->
 <div class="modal-overlay" id="tokenModal">
   <div class="modal-box">
@@ -455,9 +552,9 @@ document.addEventListener("keydown", function(e) {
 })();
 
 // ── ECharts 实例 ──
-let chartLine, chartBar, chartGoods, chartType;
+let chartLine, chartBar, chartGoods, chartType, chartMonth;
 window.addEventListener("resize", () => {
-  [chartLine, chartBar, chartGoods, chartType].forEach(c => c && c.resize());
+  [chartLine, chartBar, chartGoods, chartType, chartMonth].forEach(c => c && c.resize());
 });
 
 // ── 解析订单时间 ──
@@ -564,6 +661,8 @@ async function queryData() {
   });
 
   setStatus(`全量 ${allOrders.length} 条，筛选后 ${filteredOrders.length} 条`);
+  // 缓存全量数据供月度统计复用
+  window._cachedOrders = allOrders;
   renderAll(filteredOrders, startVal, endVal, allOrders.length);
 }
 
@@ -737,6 +836,175 @@ function hideError() { document.getElementById("errorBanner").style.display = "n
 
 // 页面加载后自动查询
 window.addEventListener("load", queryData);
+
+// ── 初始化按月查询默认值：近6个月 ──
+(function initMonthDates() {
+  const now = new Date();
+  // 结束月 = 当前月
+  const endYear  = now.getFullYear();
+  const endMonth = now.getMonth() + 1;
+  // 起始月 = 5个月前
+  const startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const startYear  = startDate.getFullYear();
+  const startMonth = startDate.getMonth() + 1;
+
+  document.getElementById("monthStart").value = `${startYear}-${String(startMonth).padStart(2,"0")}`;
+  document.getElementById("monthEnd").value   = `${endYear}-${String(endMonth).padStart(2,"0")}`;
+})();
+
+// ── 按月统计 ──
+function queryMonthly() {
+  const startVal = document.getElementById("monthStart").value; // "2026-01"
+  const endVal   = document.getElementById("monthEnd").value;   // "2026-05"
+
+  if (!startVal || !endVal) {
+    document.getElementById("monthStatus").textContent = "⚠️ 请选择起始月和结束月";
+    return;
+  }
+  if (startVal > endVal) {
+    document.getElementById("monthStatus").textContent = "⚠️ 起始月不能晚于结束月";
+    return;
+  }
+
+  const cached = window._cachedOrders;
+  if (!cached || cached.length === 0) {
+    document.getElementById("monthStatus").textContent = "⚠️ 请先点击上方「查询」拉取数据";
+    return;
+  }
+
+  // 只取 status=3 的已支付订单
+  const paid = cached.filter(o => o.status === 3);
+
+  // 生成月份列表：从 startVal 到 endVal（含两端）
+  const months = [];
+  const [sy, sm] = startVal.split("-").map(Number);
+  const [ey, em] = endVal.split("-").map(Number);
+  let y = sy, m = sm;
+  while (y < ey || (y === ey && m <= em)) {
+    months.push({ y, m });
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+
+  // 每个月统计：[N月1日 00:00, (N+1)月1日 00:00)
+  const monthStats = months.map(({ y, m }) => {
+    const label = `${y}-${String(m).padStart(2,"0")}`;
+    const startMs = new Date(y, m - 1, 1, 0, 0, 0).getTime();       // N月1日 00:00
+    const endMs   = new Date(y, m,     1, 0, 0, 0).getTime();        // (N+1)月1日 00:00
+    let count = 0, amount = 0;
+    paid.forEach(o => {
+      const ts = parseOrderTime(o);
+      if (ts >= startMs && ts < endMs) {
+        count++;
+        amount += parseFloat(o.tradeValue ?? o.amount ?? o.price ?? o.totalPrice ?? 0);
+      }
+    });
+    return { label, startMs, endMs, count, amount: +amount.toFixed(2) };
+  });
+
+  document.getElementById("monthStatus").textContent =
+    `共 ${months.length} 个月，已支付 ${paid.length} 条，来源全量 ${cached.length} 条`;
+
+  renderMonthly(monthStats);
+}
+
+// ── 渲染月度图表 & 表格 ──
+function renderMonthly(stats) {
+  const labels  = stats.map(s => s.label);
+  const counts  = stats.map(s => s.count);
+  const amounts = stats.map(s => s.amount);
+
+  // 显示图表区域
+  document.getElementById("monthChartWrap").style.display = "block";
+
+  if (!chartMonth) chartMonth = echarts.init(document.getElementById("chartMonth"));
+  chartMonth.setOption({
+    tooltip: {
+      trigger: "axis",
+      formatter: params => {
+        const name = params[0].name;
+        const cnt = params[0]?.value ?? 0;
+        const amt = params[1]?.value ?? 0;
+        return `${name}<br/>交易笔数：${cnt} 笔<br/>交易金额：¥${amt}`;
+      }
+    },
+    legend: { data: ["交易笔数", "交易金额(元)"], top: 4, textStyle: { fontSize: 12 } },
+    grid: { left: 60, right: 60, top: 40, bottom: 50 },
+    xAxis: {
+      type: "category",
+      data: labels,
+      axisLabel: { fontSize: 12 }
+    },
+    yAxis: [
+      { type: "value", name: "笔数", minInterval: 1, nameTextStyle: { fontSize: 11 } },
+      { type: "value", name: "金额(元)", nameTextStyle: { fontSize: 11 } }
+    ],
+    series: [
+      {
+        name: "交易笔数", type: "bar", yAxisIndex: 0, data: counts,
+        barMaxWidth: 50,
+        itemStyle: {
+          color: { type: "linear", x:0,y:0,x2:0,y2:1,
+            colorStops: [{ offset:0, color:"#0ea5e9" }, { offset:1, color:"#7dd3fc" }] },
+          borderRadius: [4,4,0,0]
+        },
+        label: { show: false }
+      },
+      {
+        name: "交易金额(元)", type: "line", yAxisIndex: 1, data: amounts,
+        smooth: true, symbol: "circle", symbolSize: 7,
+        lineStyle: { color: "#34a853", width: 2.5 },
+        itemStyle: { color: "#34a853" },
+        label: { show: true, position: "top", fontSize: 13, color: "#1e8449", fontWeight: 700,
+                 formatter: p => p.value > 0 ? "¥" + p.value : "",
+                 backgroundColor: "rgba(255,255,255,0.85)",
+                 padding: [2, 6],
+                 borderRadius: 4 }
+      }
+    ],
+    grid: { left: 60, right: 60, top: 50, bottom: 50 }
+  });
+
+  // 表格（倒序）
+  const maxCount = Math.max(...counts);
+  const rows = [...stats].reverse().map(s => {
+    const isPeak = s.count === maxCount && maxCount > 0;
+    const avg = s.count > 0 ? (s.amount / s.count).toFixed(2) : "—";
+    return `<tr>
+      <td><b>${s.label}</b></td>
+      <td>${s.count}${isPeak ? ' <span class="tag tag-high">峰值</span>' : ''}</td>
+      <td>¥${s.amount.toFixed(2)}</td>
+      <td>${avg}</td>
+    </tr>`;
+  }).join("");
+
+  const totalCount  = counts.reduce((a, b) => a + b, 0);
+  const totalAmount = amounts.reduce((a, b) => a + b, 0);
+
+  document.getElementById("monthTableWrap").innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>月份</th>
+          <th>交易笔数</th>
+          <th>交易金额</th>
+          <th>客单价（元）</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+        <tr style="background:#f0f9ff;font-weight:600;">
+          <td>合计</td>
+          <td>${totalCount}</td>
+          <td>¥${totalAmount.toFixed(2)}</td>
+          <td>${totalCount > 0 ? (totalAmount / totalCount).toFixed(2) : "—"}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:10px;font-size:12px;color:#888;">
+      统计口径：每月 = 当月1日 00:00:00 ~ 次月1日 00:00:00（北京时间）
+    </div>`;
+}
 </script>
 </body>
 </html>

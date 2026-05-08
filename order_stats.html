@@ -32,6 +32,8 @@
     }
     header h1 { color: #fff; font-size: 20px; font-weight: 600; }
     header p  { color: rgba(255,255,255,.75); font-size: 13px; margin-top: 2px; }
+    .back-link { color: rgba(255,255,255,.85); text-decoration: none; font-size: 14px; padding: 8px 16px; background: rgba(255,255,255,.15); border-radius: 8px; transition: background .2s; margin-left: auto; }
+    .back-link:hover { background: rgba(255,255,255,.25); }
 
     /* ── Query bar ── */
     .query-bar {
@@ -203,6 +205,79 @@
     .breakdown-card h2 { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 14px; }
     .breakdown-box { width: 100%; height: 240px; }
 
+    /* ── Month query bar ── */
+    .month-section {
+      background: #fff;
+      margin: 32px 32px 0;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.07);
+      overflow: hidden;
+    }
+    .month-section-header {
+      background: linear-gradient(90deg, #1a73e8 0%, #0f52ba 100%);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .month-section-header h2 { color: #fff; font-size: 15px; font-weight: 600; margin: 0; }
+    .month-section-header .hint { color: rgba(255,255,255,.7); font-size: 12px; margin-left: auto; }
+    .month-query-bar {
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      border-bottom: 1px solid #f0f4f8;
+    }
+    .month-query-bar label { font-size: 14px; color: #555; white-space: nowrap; }
+    .month-query-bar input[type="month"] {
+      border: 1.5px solid #dde3ec;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 14px;
+      color: #333;
+      outline: none;
+      transition: border .2s;
+    }
+    .month-query-bar input[type="month"]:focus { border-color: #1a73e8; }
+    .btn-month-query {
+      background: linear-gradient(135deg, #1a73e8, #0f52ba);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 24px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+    }
+    .btn-month-query:hover  { opacity: .9; }
+    .btn-month-query:active { transform: scale(.97); }
+    .btn-month-query:disabled { opacity: .6; cursor: not-allowed; }
+    .month-status { font-size: 13px; color: #888; margin-left: auto; }
+    .month-chart-box { width: 100%; height: 300px; padding: 20px 24px 0; }
+    .month-table-wrap { padding: 16px 24px 24px; }
+    .month-table-wrap table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .month-table-wrap th {
+      background: #e8f0fe;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      color: #555;
+      border-bottom: 2px solid #c5d8f8;
+    }
+    .month-table-wrap td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #f0f4f8;
+      color: #444;
+    }
+    .month-table-wrap tr:last-child td { border-bottom: none; }
+    .month-table-wrap tr:hover td { background: #f7f9ff; }
+
     /* ── Error banner ── */
     .error-banner {
       background: #fff5f5;
@@ -285,6 +360,7 @@
     <h1>景区导览 · 交易统计看板</h1>
     <p>ai-guide.yihaichina.com.cn · 已支付订单 (state=3)</p>
   </div>
+  <a class="back-link" href="index.html">← 返回首页</a>
 </header>
 
 <!-- 查询条件 -->
@@ -386,6 +462,30 @@
   <div id="tableWrap"><div class="placeholder">暂无数据，请先选择日期查询</div></div>
 </div>
 
+<!-- 按月统计 -->
+<div class="month-section">
+  <div class="month-section-header">
+    <span style="font-size:18px;">📅</span>
+    <h2>按月统计</h2>
+    <span class="hint">💡 统计逻辑：3月 = 3.1 00:00 ~ 4.1 00:00</span>
+  </div>
+  <div class="month-query-bar">
+    <label>起始月</label>
+    <input type="month" id="monthStart" />
+    <span class="sep" style="color:#aaa;font-size:18px;">→</span>
+    <label>结束月</label>
+    <input type="month" id="monthEnd" />
+    <button class="btn-month-query" id="btnMonthQuery" onclick="queryMonthly()">统计</button>
+    <span class="month-status" id="monthStatus">点击「统计」按月份拉取数据</span>
+  </div>
+  <div id="monthChartWrap" class="month-chart-box" style="display:none;">
+    <div id="chartMonth" style="width:100%;height:280px;"></div>
+  </div>
+  <div class="month-table-wrap">
+    <div id="monthTableWrap"><div class="placeholder" style="padding:30px 0;">请先点击「统计」按钮</div></div>
+  </div>
+</div>
+
 <script>
 // ── Token 管理 ──
 let currentToken = "bd3a2cb422294fe18d3cb3a7de7804af";
@@ -449,9 +549,9 @@ document.addEventListener("keydown", function(e) {
 })();
 
 // ── ECharts 实例 ──
-let chartLine, chartBar, chartGoods, chartExhibit;
+let chartLine, chartBar, chartGoods, chartExhibit, chartMonth;
 window.addEventListener("resize", () => {
-  [chartLine, chartBar, chartGoods, chartExhibit].forEach(c => c && c.resize());
+  [chartLine, chartBar, chartGoods, chartExhibit, chartMonth].forEach(c => c && c.resize());
 });
 
 // 用北京时间（本地时间）提取日期，避免 toISOString() 的 UTC 时区偏差
@@ -701,6 +801,210 @@ function hideError() { document.getElementById("errorBanner").style.display = "n
 
 // 页面加载后自动查询
 window.addEventListener("load", queryData);
+
+// ── 初始化按月查询默认值：近6个月 ──
+(function initMonthDates() {
+  const now = new Date();
+  const endYear  = now.getFullYear();
+  const endMonth = now.getMonth() + 1;
+  const startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const startYear  = startDate.getFullYear();
+  const startMonth = startDate.getMonth() + 1;
+
+  document.getElementById("monthStart").value = `${startYear}-${String(startMonth).padStart(2,"0")}`;
+  document.getElementById("monthEnd").value   = `${endYear}-${String(endMonth).padStart(2,"0")}`;
+})();
+
+// ── 按月统计（独立拉取数据） ──
+async function queryMonthly() {
+  const startVal = document.getElementById("monthStart").value;
+  const endVal   = document.getElementById("monthEnd").value;
+
+  if (!startVal || !endVal) {
+    document.getElementById("monthStatus").textContent = "⚠️ 请选择起始月和结束月";
+    return;
+  }
+  if (startVal > endVal) {
+    document.getElementById("monthStatus").textContent = "⚠️ 起始月不能晚于结束月";
+    return;
+  }
+
+  // 时间范围：起始月1日 ~ 结束月末月次日1日
+  const [sy, sm] = startVal.split("-").map(Number);
+  const [ey, em] = endVal.split("-").map(Number);
+  const startMs = new Date(sy, sm - 1, 1, 0, 0, 0).getTime();
+  const endMs   = new Date(ey, em,     1, 0, 0, 0).getTime();
+
+  // 禁用按钮
+  document.getElementById("btnMonthQuery").disabled = true;
+  document.getElementById("monthStatus").textContent = "正在拉取数据…";
+
+  const BASE = "https://ai-guide.yihaichina.com.cn/admin-api/pay/tenant-order/page";
+  const HEADERS = {
+    "Authorization": "Bearer " + currentToken,
+    "Tenant-Id": "1",
+    "Accept": "application/json, text/plain, */*"
+  };
+
+  let allOrders = [];
+  let pageNo = 1;
+  const pageSize = 100;
+
+  try {
+    while (true) {
+      const url = `${BASE}?pageNo=${pageNo}&pageSize=${pageSize}&startTime=${startMs}&endTime=${endMs}&state=3`;
+      const resp = await fetch(url, { headers: HEADERS });
+      if (!resp.ok) {
+        if (resp.status === 401 || resp.status === 403) { openTokenModal(); return; }
+        throw new Error(`HTTP ${resp.status}`);
+      }
+      const json = await resp.json();
+      if (json.code !== 200 && json.code !== 0) {
+        const msg = json.msg || "接口错误";
+        if (/token|登录|认证|授权|未登录|过期|expired|unauthorized|invalid/i.test(msg)) {
+          openTokenModal(); return;
+        }
+        throw new Error(msg);
+      }
+      const list  = json.data?.list  || [];
+      const total = json.data?.total || 0;
+      allOrders = allOrders.concat(list);
+      document.getElementById("monthStatus").textContent = `已获取 ${allOrders.length} / ${total} 条…`;
+      if (allOrders.length >= total || list.length < pageSize) break;
+      pageNo++;
+    }
+  } catch (e) {
+    document.getElementById("monthStatus").textContent = "⚠️ " + e.message;
+    document.getElementById("btnMonthQuery").disabled = false;
+    return;
+  }
+
+  document.getElementById("btnMonthQuery").disabled = false;
+
+  // 按月聚合
+  const months = [];
+  let y = sy, m = sm;
+  while (y < ey || (y === ey && m <= em)) {
+    months.push({ y, m });
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+
+  const monthStats = months.map(({ y, m }) => {
+    const label = `${y}-${String(m).padStart(2,"0")}`;
+    const mStartMs = new Date(y, m - 1, 1, 0, 0, 0).getTime();
+    const mEndMs   = new Date(y, m,     1, 0, 0, 0).getTime();
+    let count = 0, amount = 0;
+    allOrders.forEach(o => {
+      const ts = o.createTime || 0;
+      if (ts >= mStartMs && ts < mEndMs) {
+        count++;
+        amount += parseFloat(o.totalPrice ?? o.price ?? 0);
+      }
+    });
+    return { label, count, amount: +amount.toFixed(2) };
+  });
+
+  document.getElementById("monthStatus").textContent =
+    `共 ${months.length} 个月，拉取 ${allOrders.length} 条已支付订单`;
+  renderMonthly(monthStats);
+}
+
+// ── 渲染月度图表 & 表格 ──
+function renderMonthly(stats) {
+  const labels  = stats.map(s => s.label);
+  const counts  = stats.map(s => s.count);
+  const amounts = stats.map(s => s.amount);
+
+  document.getElementById("monthChartWrap").style.display = "block";
+
+  if (!chartMonth) chartMonth = echarts.init(document.getElementById("chartMonth"));
+  chartMonth.setOption({
+    tooltip: {
+      trigger: "axis",
+      formatter: params => {
+        const name = params[0].name;
+        const cnt = params[0]?.value ?? 0;
+        const amt = params[1]?.value ?? 0;
+        return `${name}<br/>交易笔数：${cnt} 笔<br/>交易金额：¥${amt}`;
+      }
+    },
+    legend: { data: ["交易笔数", "交易金额(元)"], top: 4, textStyle: { fontSize: 12 } },
+    grid: { left: 60, right: 60, top: 50, bottom: 50 },
+    xAxis: {
+      type: "category",
+      data: labels,
+      axisLabel: { fontSize: 12 }
+    },
+    yAxis: [
+      { type: "value", name: "笔数", minInterval: 1, nameTextStyle: { fontSize: 11 } },
+      { type: "value", name: "金额(元)", nameTextStyle: { fontSize: 11 } }
+    ],
+    series: [
+      {
+        name: "交易笔数", type: "bar", yAxisIndex: 0, data: counts,
+        barMaxWidth: 50,
+        itemStyle: {
+          color: { type: "linear", x:0,y:0,x2:0,y2:1,
+            colorStops: [{ offset:0, color:"#1a73e8" }, { offset:1, color:"#7baaf7" }] },
+          borderRadius: [4,4,0,0]
+        },
+        label: { show: false }
+      },
+      {
+        name: "交易金额(元)", type: "line", yAxisIndex: 1, data: amounts,
+        smooth: true, symbol: "circle", symbolSize: 7,
+        lineStyle: { color: "#34a853", width: 2.5 },
+        itemStyle: { color: "#34a853" },
+        label: { show: true, position: "top", fontSize: 13, color: "#1e8449", fontWeight: 700,
+                 formatter: p => p.value > 0 ? "¥" + p.value : "",
+                 backgroundColor: "rgba(255,255,255,0.85)",
+                 padding: [2, 6],
+                 borderRadius: 4 }
+      }
+    ]
+  });
+
+  // 表格（倒序）
+  const maxCount = Math.max(...counts);
+  const rows = [...stats].reverse().map(s => {
+    const isPeak = s.count === maxCount && maxCount > 0;
+    const avg = s.count > 0 ? (s.amount / s.count).toFixed(2) : "—";
+    return `<tr>
+      <td><b>${s.label}</b></td>
+      <td>${s.count}${isPeak ? ' <span class="tag tag-high">峰值</span>' : ''}</td>
+      <td>¥${s.amount.toFixed(2)}</td>
+      <td>${avg}</td>
+    </tr>`;
+  }).join("");
+
+  const totalCount  = counts.reduce((a, b) => a + b, 0);
+  const totalAmount = amounts.reduce((a, b) => a + b, 0);
+
+  document.getElementById("monthTableWrap").innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>月份</th>
+          <th>交易笔数</th>
+          <th>交易金额</th>
+          <th>客单价（元）</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+        <tr style="background:#f5f8ff;font-weight:600;">
+          <td>合计</td>
+          <td>${totalCount}</td>
+          <td>¥${totalAmount.toFixed(2)}</td>
+          <td>${totalCount > 0 ? (totalAmount / totalCount).toFixed(2) : "—"}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:10px;font-size:12px;color:#888;">
+      统计口径：每月 = 当月1日 00:00:00 ~ 次月1日 00:00:00（北京时间）
+    </div>`;
+}
 </script>
 </body>
 </html>
