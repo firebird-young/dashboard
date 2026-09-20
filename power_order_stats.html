@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>电量订单 · 交易统计</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>" />
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -493,12 +494,18 @@
 
 <script>
 // ── Token 管理 ──
-let currentToken = "994657a5630340f3a8bbd03bea0f472c";
+let currentToken = "79ca1d4ed5ce402e9755abab417135b9";
 const TOKEN_KEY = "ai_guide_token";
+const LEGACY_TOKEN = "994657a5630340f3a8bbd03bea0f472c"; // 旧 token，命中则自动升级
 
 (function loadToken() {
+  // 优先从 localStorage 恢复；若仍是旧 token 则自动升级为新值
   const saved = localStorage.getItem(TOKEN_KEY);
-  if (saved) currentToken = saved;
+  if (saved && saved !== LEGACY_TOKEN) {
+    currentToken = saved;
+  } else {
+    localStorage.setItem(TOKEN_KEY, currentToken);
+  }
 })();
 
 function saveToken(token) {
