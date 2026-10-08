@@ -489,14 +489,14 @@
 
 <script>
 // ── Token 管理 ──
-let currentToken = "79ca1d4ed5ce402e9755abab417135b9";
+let currentToken = "2bb62ba90c95486e921ccf3ab37aafca";
 const TOKEN_KEY = "ai_guide_token";
-const LEGACY_TOKEN = "994657a5630340f3a8bbd03bea0f472c"; // 旧 token，命中则自动升级
+const LEGACY_TOKENS = ["994657a5630340f3a8bbd03bea0f472c", "79ca1d4ed5ce402e9755abab417135b9"]; // 历史 token 列表，命中则自动升级到新值
 
 (function loadToken() {
-  // 优先从 localStorage 恢复；若仍是旧 token 则自动升级为新值
+  // 优先从 localStorage 恢复；若命中历史 token 则自动升级
   const saved = localStorage.getItem(TOKEN_KEY);
-  if (saved && saved !== LEGACY_TOKEN) {
+  if (saved && !LEGACY_TOKENS.includes(saved)) {
     currentToken = saved;
   } else {
     localStorage.setItem(TOKEN_KEY, currentToken);
